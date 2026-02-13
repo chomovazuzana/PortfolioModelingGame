@@ -22,7 +22,8 @@ function getEncryptionKey(): string {
 // GET /api/auth/login — Initiate OAuth2 PKCE flow
 router.get('/login', (_req, res) => {
   if (process.env.DISABLE_LOGIN === 'true') {
-    res.json({ message: 'Login disabled in development mode. Use /api/auth/session.' });
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.redirect(`${frontendUrl}/games`);
     return;
   }
 
