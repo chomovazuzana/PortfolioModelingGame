@@ -31,6 +31,12 @@ export const api = {
     // Auth
     getSession: () => request('/auth/session'),
     logout: () => request('/auth/logout'),
+    // Dev mode
+    getDevUsers: () => request('/auth/dev-users'),
+    devSwitch: (userId) => request('/auth/dev-switch', {
+        method: 'POST',
+        body: JSON.stringify({ userId }),
+    }),
     // Games
     listGames: () => request('/games'),
     getGame: (id) => request(`/games/${id}`),
@@ -55,4 +61,7 @@ export const api = {
     getLeaderboard: (id) => request(`/games/${id}/leaderboard`),
     getResults: (id) => request(`/games/${id}/results`),
     getSnapshots: (id) => request(`/games/${id}/snapshots`),
+    // Admin
+    getAdminPlayers: (id) => request(`/admin/games/${id}/players`),
+    downloadLeaderboardCsv: (id) => fetch(`${API_URL}/admin/games/${id}/leaderboard/export`, { credentials: 'include' }),
 };

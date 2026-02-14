@@ -9,9 +9,10 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const { user, isAuthenticated, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isDevMode = import.meta.env.VITE_DISABLE_LOGIN === 'true';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={`min-h-screen bg-gray-50 ${isDevMode ? 'pt-12' : ''}`}>
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <a href="/games" className="text-lg font-bold text-gray-900">

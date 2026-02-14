@@ -44,7 +44,8 @@ router.get('/games/:id', requireAuth, validateParams(gameIdParam), async (req, r
 // POST /api/games/:id/join — Join game
 router.post('/games/:id/join', requireAuth, validateParams(gameIdParam), validateBody(joinGameSchema), async (req, res) => {
   try {
-    const game = await gameService.joinGame(paramStr(req.params.id), req.user!.id, req.body.gameCode);
+    const hidden = req.user!.role === 'admin';
+    const game = await gameService.joinGame(paramStr(req.params.id), req.user!.id, req.body.gameCode, hidden);
     res.json(game);
   } catch (err) {
     handleError(err, res);

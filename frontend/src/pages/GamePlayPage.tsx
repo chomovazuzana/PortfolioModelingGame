@@ -176,9 +176,23 @@ function GamePlayContent({ gameId }: { gameId: string }) {
               Year {playState.currentYear} Allocation
             </h2>
 
+            {playState.roundDeadline && (() => {
+              const dl = new Date(playState.roundDeadline);
+              const isPast = dl < new Date();
+              return (
+                <div className={`mb-3 rounded-lg px-3 py-2 text-sm ${isPast ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>
+                  {isPast ? 'Deadline has passed' : `Deadline: ${dl.toLocaleString()}`}
+                </div>
+              );
+            })()}
+
             {playState.allocationSubmitted ? (
               <p className="text-sm text-gray-500">
                 You have already submitted your allocation for {playState.currentYear}.
+              </p>
+            ) : playState.roundDeadline && new Date(playState.roundDeadline) < new Date() ? (
+              <p className="text-sm text-red-600">
+                The deadline for this round has passed. You can no longer submit an allocation.
               </p>
             ) : (
               <AllocationPanel

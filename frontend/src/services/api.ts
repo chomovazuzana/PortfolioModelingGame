@@ -12,6 +12,7 @@ import type {
   LeaderboardEntry,
   FinalResults,
   PortfolioSnapshot,
+  AdminPlayerDetail,
 } from '../shared/types';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -58,6 +59,14 @@ export const api = {
   getSession: () => request<{ user: User }>('/auth/session'),
   logout: () => request<void>('/auth/logout'),
 
+  // Dev mode
+  getDevUsers: () => request<User[]>('/auth/dev-users'),
+  devSwitch: (userId: string) =>
+    request<{ user: User }>('/auth/dev-switch', {
+      method: 'POST',
+      body: JSON.stringify({ userId }),
+    }),
+
   // Games
   listGames: () => request<Game[]>('/games'),
   getGame: (id: string) => request<GameDetail>(`/games/${id}`),
@@ -92,4 +101,10 @@ export const api = {
   getResults: (id: string) => request<FinalResults>(`/games/${id}/results`),
   getSnapshots: (id: string) =>
     request<PortfolioSnapshot[]>(`/games/${id}/snapshots`),
+
+  // Admin
+  getAdminPlayers: (id: string) =>
+    request<AdminPlayerDetail[]>(`/admin/games/${id}/players`),
+  downloadLeaderboardCsv: (id: string) =>
+    fetch(`${API_URL}/admin/games/${id}/leaderboard/export`, { credentials: 'include' }),
 };

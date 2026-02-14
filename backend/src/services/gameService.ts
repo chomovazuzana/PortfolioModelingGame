@@ -10,6 +10,10 @@ export async function createGame(
     name: string;
     initialCapital?: number;
     deadline?: string | null;
+    round1Deadline?: string | null;
+    round2Deadline?: string | null;
+    round3Deadline?: string | null;
+    round4Deadline?: string | null;
     maxPlayers?: number | null;
     gameCode?: string;
   }
@@ -23,6 +27,10 @@ export async function createGame(
       gameCode,
       initialCapital: String(data.initialCapital ?? 100_000),
       deadline: data.deadline ? new Date(data.deadline) : null,
+      round1Deadline: data.round1Deadline ? new Date(data.round1Deadline) : null,
+      round2Deadline: data.round2Deadline ? new Date(data.round2Deadline) : null,
+      round3Deadline: data.round3Deadline ? new Date(data.round3Deadline) : null,
+      round4Deadline: data.round4Deadline ? new Date(data.round4Deadline) : null,
       maxPlayers: data.maxPlayers ?? null,
       createdBy: adminId,
     })
@@ -103,6 +111,7 @@ export async function getGame(
       status: playerRow.status as 'playing' | 'completed',
       joinedAt: playerRow.joinedAt.toISOString(),
       completedAt: playerRow.completedAt?.toISOString() ?? null,
+      hiddenFromLeaderboard: playerRow.hiddenFromLeaderboard,
     };
   }
 
@@ -112,7 +121,8 @@ export async function getGame(
 export async function joinGame(
   gameId: string,
   userId: string,
-  gameCode: string
+  gameCode: string,
+  hiddenFromLeaderboard: boolean = false
 ): Promise<GameDetail> {
   const [game] = await db.select().from(games).where(eq(games.id, gameId)).limit(1);
   if (!game) {
@@ -155,6 +165,7 @@ export async function joinGame(
     userId,
     currentYear: 2021,
     status: 'playing',
+    hiddenFromLeaderboard,
   });
 
   return getGame(gameId, userId);
@@ -163,7 +174,15 @@ export async function joinGame(
 export async function updateGame(
   gameId: string,
   adminId: string,
-  data: { name?: string; deadline?: string | null; maxPlayers?: number | null }
+  data: {
+    name?: string;
+    deadline?: string | null;
+    round1Deadline?: string | null;
+    round2Deadline?: string | null;
+    round3Deadline?: string | null;
+    round4Deadline?: string | null;
+    maxPlayers?: number | null;
+  }
 ): Promise<Game> {
   const [game] = await db.select().from(games).where(eq(games.id, gameId)).limit(1);
   if (!game) {
@@ -174,6 +193,18 @@ export async function updateGame(
   if (data.name !== undefined) updates.name = data.name;
   if (data.deadline !== undefined) {
     updates.deadline = data.deadline ? new Date(data.deadline) : null;
+  }
+  if (data.round1Deadline !== undefined) {
+    updates.round1Deadline = data.round1Deadline ? new Date(data.round1Deadline) : null;
+  }
+  if (data.round2Deadline !== undefined) {
+    updates.round2Deadline = data.round2Deadline ? new Date(data.round2Deadline) : null;
+  }
+  if (data.round3Deadline !== undefined) {
+    updates.round3Deadline = data.round3Deadline ? new Date(data.round3Deadline) : null;
+  }
+  if (data.round4Deadline !== undefined) {
+    updates.round4Deadline = data.round4Deadline ? new Date(data.round4Deadline) : null;
   }
   if (data.maxPlayers !== undefined) updates.maxPlayers = data.maxPlayers;
 
@@ -241,6 +272,10 @@ function mapGame(row: typeof games.$inferSelect): Game {
     status: row.status as Game['status'],
     initialCapital: Number(row.initialCapital),
     deadline: row.deadline?.toISOString() ?? null,
+    round1Deadline: row.round1Deadline?.toISOString() ?? null,
+    round2Deadline: row.round2Deadline?.toISOString() ?? null,
+    round3Deadline: row.round3Deadline?.toISOString() ?? null,
+    round4Deadline: row.round4Deadline?.toISOString() ?? null,
     maxPlayers: row.maxPlayers,
     createdBy: row.createdBy,
     createdAt: row.createdAt.toISOString(),

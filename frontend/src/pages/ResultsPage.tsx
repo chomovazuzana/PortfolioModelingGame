@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
@@ -14,6 +14,7 @@ export function ResultsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [pdfLoading, setPdfLoading] = useState(false);
 
   const resultsQuery = useQuery({
     queryKey: ['results', id],
@@ -73,17 +74,40 @@ export function ResultsPage() {
   const firstSnapshot = playerResult.snapshots[0];
   const initialCapital = firstSnapshot ? firstSnapshot.valueStart : 100_000;
 
+  async function handleDownloadPdf() {
+    if (!results) return;
+    setPdfLoading(true);
+    try {
+      const { generateResultsPdf } = await import('../utils/generateResultsPdf');
+      await generateResultsPdf(results, 'Game Results', user?.displayName ?? 'Player');
+    } catch {
+      // ignore
+    } finally {
+      setPdfLoading(false);
+    }
+  }
+
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
         <div>
-          <button
-            onClick={() => navigate(`/games/${id}`)}
-            className="text-sm text-blue-600 hover:text-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
-          >
-            &larr; Back to Dashboard
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(`/games/${id}`)}
+              className="text-sm text-blue-600 hover:text-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
+            >
+              &larr; Back to Dashboard
+            </button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleDownloadPdf}
+              disabled={pdfLoading}
+            >
+              {pdfLoading ? 'Generating...' : 'Download PDF'}
+            </Button>
+          </div>
           <h1 className="mt-1 text-xl font-bold text-gray-900 sm:text-2xl">Final Results</h1>
         </div>
 

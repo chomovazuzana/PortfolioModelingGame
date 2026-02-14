@@ -33,6 +33,14 @@ export function GameDashboardPage() {
     },
   });
 
+  const secretJoinMutation = useMutation({
+    mutationFn: () =>
+      api.joinGame(id!, { gameCode: gameQuery.data!.gameCode, hidden: true }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['games', id] });
+    },
+  });
+
   if (gameQuery.isLoading) {
     return (
       <div className="flex justify-center py-12" role="status" aria-label="Loading game details">
@@ -83,7 +91,7 @@ export function GameDashboardPage() {
         {hasJoined ? (
           <YourProgress game={game} />
         ) : (
-          game.status === 'open' && (
+          !isAdmin && game.status === 'open' && (
             <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
               <h3 className="font-semibold text-gray-900">Join this Game</h3>
               <p className="mt-2 text-sm text-gray-500">
@@ -111,6 +119,37 @@ export function GameDashboardPage() {
           <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6">
             <h3 className="font-semibold text-gray-900">Admin Actions</h3>
             <div className="mt-4 space-y-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => navigate(`/admin/games/${id}`)}
+              >
+                View Player Progress
+              </Button>
+
+              {game.status === 'open' && !hasJoined && (
+                <div>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => secretJoinMutation.mutate()}
+                    loading={secretJoinMutation.isPending}
+                  >
+                    Play Secretly
+                  </Button>
+                  <p className="mt-1 text-xs text-gray-400">
+                    Join hidden from the leaderboard.
+                  </p>
+                  {secretJoinMutation.error && (
+                    <p className="mt-1 text-xs text-red-600" role="alert">
+                      {secretJoinMutation.error instanceof ApiClientError
+                        ? secretJoinMutation.error.message
+                        : 'Failed to join'}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {game.status === 'open' && (
                 <Button
                   variant="danger"

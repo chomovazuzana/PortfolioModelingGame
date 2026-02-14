@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, integer, decimal, timestamp, pgEnum, uniqueIndex, check, serial, index } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, integer, decimal, timestamp, pgEnum, uniqueIndex, check, serial, index, boolean } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 // ── Enums ──────────────────────────────────────────
@@ -25,6 +25,10 @@ export const games = pgTable('games', {
   status: gameStatusEnum('status').notNull().default('open'),
   initialCapital: decimal('initial_capital', { precision: 12, scale: 2 }).notNull().default('100000.00'),
   deadline: timestamp('deadline', { withTimezone: true }),
+  round1Deadline: timestamp('round1_deadline', { withTimezone: true }),
+  round2Deadline: timestamp('round2_deadline', { withTimezone: true }),
+  round3Deadline: timestamp('round3_deadline', { withTimezone: true }),
+  round4Deadline: timestamp('round4_deadline', { withTimezone: true }),
   maxPlayers: integer('max_players'),
   createdBy: uuid('created_by').notNull().references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -41,6 +45,7 @@ export const gamePlayers = pgTable('game_players', {
   status: playerGameStatusEnum('status').notNull().default('playing'),
   joinedAt: timestamp('joined_at', { withTimezone: true }).notNull().defaultNow(),
   completedAt: timestamp('completed_at', { withTimezone: true }),
+  hiddenFromLeaderboard: boolean('hidden_from_leaderboard').notNull().default(false),
 }, (table) => [
   uniqueIndex('game_players_pk').on(table.gameId, table.userId),
   index('game_players_game_idx').on(table.gameId),

@@ -82,13 +82,15 @@ export async function getFinalResults(gameId: string, userId: string): Promise<F
   // 6. Compute player result
   const finalValue = snapshots.length > 0 ? snapshots[snapshots.length - 1]!.valueEnd : initialCapital;
   const totalReturnPct = cumulativeReturn(initialCapital, finalValue);
+  // rank is 0 if player is hidden from leaderboard (admin secret play)
   const playerRank = leaderboard.find((e) => e.userId === userId)?.rank ?? 0;
+  const totalPlayers = leaderboard.length;
 
   const playerResult: PlayerFinalResult = {
     finalValue,
     totalReturnPct,
     rank: playerRank,
-    totalPlayers: leaderboard.length,
+    totalPlayers,
     snapshots,
     allocations: playerAllocations,
   };

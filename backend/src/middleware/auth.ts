@@ -17,18 +17,38 @@ declare global {
 
 const MOCK_USER: User = {
   id: '00000000-0000-0000-0000-000000000001',
-  email: 'dev@example.com',
-  displayName: 'Dev User',
+  email: 'admin@dev.local',
+  displayName: 'Admin User',
   role: 'admin',
   organizationalUnit: 'Development',
 };
 
 const COOKIE_NAME = 'auth_session';
+const DEV_COOKIE_NAME = 'dev_user_id';
 
-export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   if (process.env.DISABLE_LOGIN === 'true') {
-    req.user = MOCK_USER;
-    return next();
+    try {
+      const devUserId = req.cookies?.[DEV_COOKIE_NAME] as string | undefined;
+      if (devUserId) {
+        const [userRow] = await db.select().from(users).where(eq(users.id, devUserId)).limit(1);
+        if (userRow) {
+          req.user = {
+            id: userRow.id,
+            email: userRow.email,
+            displayName: userRow.displayName,
+            role: userRow.role as 'player' | 'admin',
+            organizationalUnit: userRow.organizationalUnit,
+          };
+          return next();
+        }
+      }
+      req.user = MOCK_USER;
+      return next();
+    } catch {
+      req.user = MOCK_USER;
+      return next();
+    }
   }
 
   const key = process.env.TOKEN_ENCRYPTION_KEY;
@@ -57,7 +77,8 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
 }
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction): void {
-  requireAuth(req, res, () => {
+  requireAuth(req, res, (err?: unknown) => {
+    if (err) return next(err);
     if (req.user?.role !== 'admin') {
       res.status(403).json({ error: 'Admin access required', code: 'ADMIN_REQUIRED' });
       return;

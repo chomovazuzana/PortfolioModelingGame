@@ -67,6 +67,15 @@ export async function getPlayState(gameId: string, userId: string): Promise<Play
     allocationSubmitted = !!existingAlloc;
   }
 
+  // Compute round deadline for the current year
+  const roundDeadlineMap: Record<number, Date | null> = {
+    2021: game.round1Deadline,
+    2022: game.round2Deadline,
+    2023: game.round3Deadline,
+    2024: game.round4Deadline,
+  };
+  const roundDeadline = roundDeadlineMap[currentYear]?.toISOString() ?? null;
+
   // Scenario briefing (use last year if completed)
   const scenarioYear = currentYear <= 2024 ? currentYear : 2024;
   const briefing = SCENARIO_BRIEFINGS[scenarioYear]!;
@@ -82,6 +91,7 @@ export async function getPlayState(gameId: string, userId: string): Promise<Play
     completedYears,
     allocationSubmitted,
     playerStatus,
+    roundDeadline,
   };
 }
 
@@ -143,8 +153,20 @@ export async function submitAllocation(
       throw new ServiceError('Allocation already submitted for this year', 'ALREADY_SUBMITTED', 400);
     }
 
-    // 4. Get current portfolio value
+    // 3b. Check round deadline
     const [game] = await tx.select().from(games).where(eq(games.id, gameId)).limit(1);
+    const roundDeadlineMap: Record<number, Date | null> = {
+      2021: game!.round1Deadline,
+      2022: game!.round2Deadline,
+      2023: game!.round3Deadline,
+      2024: game!.round4Deadline,
+    };
+    const roundDeadline = roundDeadlineMap[currentYear] ?? null;
+    if (roundDeadline && new Date() > roundDeadline) {
+      throw new ServiceError('The deadline for this round has passed', 'ROUND_DEADLINE_PASSED', 400);
+    }
+
+    // 4. Get current portfolio value
     const initialCapital = Number(game!.initialCapital);
 
     let portfolioStart = initialCapital;

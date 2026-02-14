@@ -1,6 +1,6 @@
 import { db } from '../db/index';
 import { games, gamePlayers, users, portfolioSnapshots } from '../db/schema';
-import { eq, and, desc, asc, sql } from 'drizzle-orm';
+import { eq, and, asc, sql } from 'drizzle-orm';
 import type { LeaderboardEntry } from '../shared/types';
 import { ServiceError } from './gameService';
 
@@ -23,7 +23,7 @@ export async function getLeaderboard(gameId: string): Promise<LeaderboardEntry[]
     })
     .from(gamePlayers)
     .innerJoin(users, eq(gamePlayers.userId, users.id))
-    .where(eq(gamePlayers.gameId, gameId));
+    .where(and(eq(gamePlayers.gameId, gameId), eq(gamePlayers.hiddenFromLeaderboard, false)));
 
   // Get the latest snapshot value for each player
   const snapshotRows = await db

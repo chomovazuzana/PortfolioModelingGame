@@ -10,6 +10,7 @@ const router = Router();
 const COOKIE_NAME = 'auth_session';
 const TEMP_COOKIE_MAX_AGE = 10 * 60 * 1000; // 10 minutes
 const SESSION_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
+const DEV_COOKIE_NAME = 'dev_user_id';
 
 function getEncryptionKey(): string {
   const key = process.env.TOKEN_ENCRYPTION_KEY;
@@ -118,17 +119,47 @@ router.get('/callback', async (req, res) => {
 });
 
 // GET /api/auth/session — Return current user from session
-router.get('/session', (req, res) => {
+router.get('/session', async (req, res) => {
   if (process.env.DISABLE_LOGIN === 'true') {
-    res.json({
-      user: {
-        id: '00000000-0000-0000-0000-000000000001',
-        email: 'dev@example.com',
-        displayName: 'Dev User',
-        role: 'admin',
-        organizationalUnit: 'Development',
-      },
-    });
+    try {
+      const devUserId = req.cookies?.[DEV_COOKIE_NAME] as string | undefined;
+      const targetId = devUserId || '00000000-0000-0000-0000-000000000001';
+
+      const [userRow] = await db.select().from(users).where(eq(users.id, targetId)).limit(1);
+      if (userRow) {
+        res.json({
+          user: {
+            id: userRow.id,
+            email: userRow.email,
+            displayName: userRow.displayName,
+            role: userRow.role,
+            organizationalUnit: userRow.organizationalUnit,
+          },
+        });
+        return;
+      }
+
+      // Fallback to hardcoded admin if user not found in DB
+      res.json({
+        user: {
+          id: '00000000-0000-0000-0000-000000000001',
+          email: 'admin@dev.local',
+          displayName: 'Admin User',
+          role: 'admin',
+          organizationalUnit: 'Development',
+        },
+      });
+    } catch {
+      res.json({
+        user: {
+          id: '00000000-0000-0000-0000-000000000001',
+          email: 'admin@dev.local',
+          displayName: 'Admin User',
+          role: 'admin',
+          organizationalUnit: 'Development',
+        },
+      });
+    }
     return;
   }
 
@@ -151,9 +182,80 @@ router.get('/session', (req, res) => {
   }
 });
 
+// GET /api/auth/dev-users — List all dev users (only in DISABLE_LOGIN mode)
+router.get('/dev-users', async (_req, res) => {
+  if (process.env.DISABLE_LOGIN !== 'true') {
+    res.status(404).json({ error: 'Not found', code: 'NOT_FOUND' });
+    return;
+  }
+
+  try {
+    const allUsers = await db
+      .select()
+      .from(users)
+      .orderBy(users.email);
+
+    res.json(
+      allUsers.map((u) => ({
+        id: u.id,
+        email: u.email,
+        displayName: u.displayName,
+        role: u.role,
+        organizationalUnit: u.organizationalUnit,
+      }))
+    );
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' });
+  }
+});
+
+// POST /api/auth/dev-switch — Switch dev user (only in DISABLE_LOGIN mode)
+router.post('/dev-switch', async (req, res) => {
+  if (process.env.DISABLE_LOGIN !== 'true') {
+    res.status(404).json({ error: 'Not found', code: 'NOT_FOUND' });
+    return;
+  }
+
+  try {
+    const { userId } = req.body;
+    if (!userId || typeof userId !== 'string') {
+      res.status(400).json({ error: 'userId is required', code: 'BAD_REQUEST' });
+      return;
+    }
+
+    const [userRow] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!userRow) {
+      res.status(404).json({ error: 'User not found', code: 'USER_NOT_FOUND' });
+      return;
+    }
+
+    res.cookie(DEV_COOKIE_NAME, userId, {
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: SESSION_MAX_AGE,
+      path: '/',
+    });
+
+    res.json({
+      user: {
+        id: userRow.id,
+        email: userRow.email,
+        displayName: userRow.displayName,
+        role: userRow.role,
+        organizationalUnit: userRow.organizationalUnit,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error', code: 'INTERNAL_ERROR' });
+  }
+});
+
 // GET /api/auth/logout — Clear session cookies
 router.get('/logout', (_req, res) => {
   clearEncryptedCookies(res, COOKIE_NAME);
+  res.clearCookie(DEV_COOKIE_NAME, { path: '/' });
   res.json({ success: true });
 });
 

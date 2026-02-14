@@ -9,14 +9,20 @@ const db = drizzle(client);
 async function seed() {
   console.log('Seeding database...');
 
-  // ── Seed dev admin user (for DISABLE_LOGIN mode) ──
-  await db.insert(users).values({
-    id: '00000000-0000-0000-0000-000000000001',
-    email: 'dev@example.com',
-    displayName: 'Dev User',
-    role: 'admin',
-    organizationalUnit: 'Development',
-  }).onConflictDoNothing();
+  // ── Seed dev users (for DISABLE_LOGIN mode) ──
+  const devUsers = [
+    { id: '00000000-0000-0000-0000-000000000001', email: 'admin@dev.local', displayName: 'Admin User', role: 'admin' as const, organizationalUnit: 'Development' },
+    { id: '00000000-0000-0000-0000-000000000002', email: 'player1@dev.local', displayName: 'Alice Investor', role: 'player' as const, organizationalUnit: 'Investments' },
+    { id: '00000000-0000-0000-0000-000000000003', email: 'player2@dev.local', displayName: 'Bob Trader', role: 'player' as const, organizationalUnit: 'Trading' },
+    { id: '00000000-0000-0000-0000-000000000004', email: 'player3@dev.local', displayName: 'Carol Analyst', role: 'player' as const, organizationalUnit: 'Research' },
+    { id: '00000000-0000-0000-0000-000000000005', email: 'player4@dev.local', displayName: 'Dave Banker', role: 'player' as const, organizationalUnit: 'Banking' },
+    { id: '00000000-0000-0000-0000-000000000006', email: 'player5@dev.local', displayName: 'Eve Advisor', role: 'player' as const, organizationalUnit: 'Advisory' },
+  ];
+
+  for (const u of devUsers) {
+    await db.insert(users).values(u).onConflictDoNothing();
+  }
+  console.log(`  Inserted ${devUsers.length} dev users`);
 
   // ── Seed Asset Returns (4 years × 5 asset classes = 20 rows) ──
   const scenarios = {

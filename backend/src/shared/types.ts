@@ -21,6 +21,10 @@ export interface Game {
   status: GameStatus;
   initialCapital: number;
   deadline: string | null;       // ISO 8601
+  round1Deadline: string | null;
+  round2Deadline: string | null;
+  round3Deadline: string | null;
+  round4Deadline: string | null;
   maxPlayers: number | null;
   createdBy: string;
   createdAt: string;
@@ -62,6 +66,7 @@ export interface PlayerProgress {
   status: PlayerGameStatus;
   joinedAt: string;
   completedAt: string | null;
+  hiddenFromLeaderboard: boolean;
 }
 
 // ── Play State ─────────────────────────────────────
@@ -76,6 +81,7 @@ export interface PlayState {
   completedYears: number[];
   allocationSubmitted: boolean;
   playerStatus: PlayerGameStatus;
+  roundDeadline: string | null;
 }
 
 export interface ScenarioBriefing {
@@ -161,6 +167,10 @@ export interface CreateGameRequest {
   name: string;
   initialCapital?: number;       // default 100000
   deadline?: string;             // ISO 8601
+  round1Deadline?: string;
+  round2Deadline?: string;
+  round3Deadline?: string;
+  round4Deadline?: string;
   maxPlayers?: number;
   gameCode?: string;             // auto-generated if omitted
 }
@@ -168,11 +178,16 @@ export interface CreateGameRequest {
 export interface UpdateGameRequest {
   name?: string;
   deadline?: string | null;
+  round1Deadline?: string | null;
+  round2Deadline?: string | null;
+  round3Deadline?: string | null;
+  round4Deadline?: string | null;
   maxPlayers?: number | null;
 }
 
 export interface JoinGameRequest {
   gameCode: string;
+  hidden?: boolean;
 }
 
 export interface SubmitAllocationRequest {
@@ -182,6 +197,21 @@ export interface SubmitAllocationRequest {
   equities: number;
   commodities: number;
   reits: number;
+}
+
+// ── Admin Player Detail ───────────────────────────
+export interface AdminPlayerDetail {
+  userId: string;
+  displayName: string;
+  email: string;
+  currentYear: number;
+  status: PlayerGameStatus;
+  joinedAt: string;
+  completedAt: string | null;
+  portfolioValue: number;
+  hiddenFromLeaderboard: boolean;
+  snapshots: PortfolioSnapshot[];
+  allocations: AllocationRecord[];
 }
 
 // ── API Error ──────────────────────────────────────
