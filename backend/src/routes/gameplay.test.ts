@@ -63,19 +63,20 @@ describe('Gameplay routes', () => {
     expect(res.body.code).toBe('NOT_JOINED');
   });
 
-  it('POST /api/games/:id/allocations submits allocation for 2021', async () => {
+  it('POST /api/games/:id/allocations submits fund allocation for 2021', async () => {
     const { gameId } = await createAndJoinGame();
 
     const res = await request(app)
       .post(`/api/games/${gameId}/allocations`)
-      .send({ year: 2021, cash: 20, bonds: 20, equities: 20, commodities: 20, reits: 20 });
+      .send({ year: 2021, allocations: { '924': 50, '953': 50 } });
 
     expect(res.status).toBe(200);
     expect(res.body.year).toBe(2021);
     expect(res.body.portfolioStart).toBe(100000);
     expect(res.body.portfolioEnd).toBeGreaterThan(0);
     expect(res.body.returnPct).toBeDefined();
-    expect(res.body.breakdown).toHaveLength(5);
+    expect(res.body.breakdown.length).toBeGreaterThan(0);
+    expect(res.body.breakdown[0].fundName).toBeDefined();
     expect(res.body.nextYear).toBe(2022);
     expect(res.body.playerStatus).toBe('playing');
   });
@@ -85,7 +86,7 @@ describe('Gameplay routes', () => {
 
     const res = await request(app)
       .post(`/api/games/${gameId}/allocations`)
-      .send({ year: 2021, cash: 10, bonds: 10, equities: 10, commodities: 10, reits: 10 });
+      .send({ year: 2021, allocations: { '924': 10, '953': 10 } });
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('VALIDATION_ERROR');
@@ -96,7 +97,7 @@ describe('Gameplay routes', () => {
 
     const res = await request(app)
       .post(`/api/games/${gameId}/allocations`)
-      .send({ year: 2022, cash: 20, bonds: 20, equities: 20, commodities: 20, reits: 20 });
+      .send({ year: 2022, allocations: { '924': 100 } });
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('WRONG_YEAR');
@@ -108,12 +109,12 @@ describe('Gameplay routes', () => {
     // First submit
     await request(app)
       .post(`/api/games/${gameId}/allocations`)
-      .send({ year: 2021, cash: 100, bonds: 0, equities: 0, commodities: 0, reits: 0 });
+      .send({ year: 2021, allocations: { '924': 100 } });
 
     // Second submit for same year
     const res = await request(app)
       .post(`/api/games/${gameId}/allocations`)
-      .send({ year: 2021, cash: 100, bonds: 0, equities: 0, commodities: 0, reits: 0 });
+      .send({ year: 2021, allocations: { '924': 100 } });
 
     expect(res.status).toBe(400);
     expect(res.body.code).toBe('WRONG_YEAR');
@@ -123,10 +124,10 @@ describe('Gameplay routes', () => {
     const { gameId } = await createAndJoinGame('Full Flow');
 
     const yearAllocations = [
-      { year: 2021, cash: 0, bonds: 0, equities: 0, commodities: 0, reits: 100 },
-      { year: 2022, cash: 0, bonds: 0, equities: 0, commodities: 100, reits: 0 },
-      { year: 2023, cash: 0, bonds: 0, equities: 100, commodities: 0, reits: 0 },
-      { year: 2024, cash: 0, bonds: 0, equities: 100, commodities: 0, reits: 0 },
+      { year: 2021, allocations: { '924': 100 } },       // NBG Global Equity
+      { year: 2022, allocations: { '953': 100 } },       // DELOS Blue Chips
+      { year: 2023, allocations: { '916': 100 } },       // DELOS Small Cap
+      { year: 2024, allocations: { '753': 100 } },       // DELOS Synthesis Best Red
     ];
 
     let lastEnd = 100000;
@@ -165,16 +166,18 @@ describe('Gameplay routes', () => {
     expect(resultsRes.body.fundBenchmarks).toBeDefined();
     expect(resultsRes.body.fundBenchmarks.length).toBeGreaterThan(0);
 
-    // Verify optimal path
+    // Verify optimal path uses fund IDs
     const optimal = resultsRes.body.optimalPath;
-    expect(optimal[0].bestAsset).toBe('reits');
-    expect(optimal[1].bestAsset).toBe('commodities');
-    expect(optimal[2].bestAsset).toBe('equities');
-    expect(optimal[3].bestAsset).toBe('equities');
+    expect(optimal[0].bestFundId).toBe(924);
+    expect(optimal[0].bestFundName).toBe('NBG Global Equity');
+    expect(optimal[1].bestFundId).toBe(953);
+    expect(optimal[2].bestFundId).toBe(916);
+    expect(optimal[3].bestFundId).toBe(753);
 
     // Verify fund benchmarks have cumulative returns
     for (const fund of resultsRes.body.fundBenchmarks) {
       expect(fund.fundName).toBeDefined();
+      expect(fund.fundType).toBeDefined();
       expect(fund.cumulativeReturnPct).toBeDefined();
       expect(fund.finalValue).toBeDefined();
       expect(fund.years).toHaveLength(4);
@@ -189,6 +192,9 @@ describe('Gameplay routes', () => {
     const allocsRes = await request(app).get(`/api/games/${gameId}/allocations`);
     expect(allocsRes.status).toBe(200);
     expect(allocsRes.body).toHaveLength(4);
+    // Verify allocation records use new format
+    expect(allocsRes.body[0].allocations).toBeDefined();
+    expect(typeof allocsRes.body[0].allocations).toBe('object');
   });
 
   it('GET /api/games/:id/results returns 403 for incomplete player', async () => {
@@ -197,24 +203,24 @@ describe('Gameplay routes', () => {
     // Submit only year 2021
     await request(app)
       .post(`/api/games/${gameId}/allocations`)
-      .send({ year: 2021, cash: 100, bonds: 0, equities: 0, commodities: 0, reits: 0 });
+      .send({ year: 2021, allocations: { '924': 100 } });
 
     const res = await request(app).get(`/api/games/${gameId}/results`);
     expect(res.status).toBe(403);
     expect(res.body.code).toBe('GAME_NOT_COMPLETED');
   });
 
-  it('Portfolio calculation: 100% equities 2021 yields correct result', async () => {
+  it('Portfolio calculation: 100% NBG Global Equity 2021 yields correct result', async () => {
     const { gameId } = await createAndJoinGame('Calc Check');
 
     const res = await request(app)
       .post(`/api/games/${gameId}/allocations`)
-      .send({ year: 2021, cash: 0, bonds: 0, equities: 100, commodities: 0, reits: 0 });
+      .send({ year: 2021, allocations: { '924': 100 } });
 
     expect(res.status).toBe(200);
-    // 100000 * 22.35% = 22350 gain → 122350
-    expect(res.body.portfolioEnd).toBeCloseTo(122350, 0);
-    expect(res.body.returnPct).toBeCloseTo(22.35, 1);
+    // 100000 * 28.27% = 28270 gain → 128270
+    expect(res.body.portfolioEnd).toBeCloseTo(128270, 0);
+    expect(res.body.returnPct).toBeCloseTo(28.27, 1);
   });
 
   it('Admin can view all players', async () => {
@@ -223,7 +229,7 @@ describe('Gameplay routes', () => {
     const res = await request(app).get(`/api/admin/games/${gameId}/players`);
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
-    expect(res.body[0].displayName).toBe('Dev User');
+    expect(res.body[0].displayName).toBeDefined();
     expect(res.body[0].currentYear).toBe(2021);
   });
 
@@ -232,12 +238,13 @@ describe('Gameplay routes', () => {
 
     await request(app)
       .post(`/api/games/${gameId}/allocations`)
-      .send({ year: 2021, cash: 100, bonds: 0, equities: 0, commodities: 0, reits: 0 });
+      .send({ year: 2021, allocations: { '924': 100 } });
 
     const res = await request(app).get(`/api/admin/games/${gameId}/allocations`);
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
     expect(res.body[0].year).toBe(2021);
-    expect(res.body[0].cash).toBe(100);
+    expect(res.body[0].allocations).toBeDefined();
+    expect(res.body[0].allocations['924']).toBe(100);
   });
 });

@@ -1,11 +1,10 @@
-import { pgTable, uuid, text, integer, decimal, timestamp, pgEnum, uniqueIndex, check, serial, index, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, integer, decimal, timestamp, pgEnum, uniqueIndex, check, serial, index, boolean, jsonb } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 // ── Enums ──────────────────────────────────────────
 export const gameStatusEnum = pgEnum('game_status', ['open', 'closed', 'completed']);
 export const playerGameStatusEnum = pgEnum('player_game_status', ['playing', 'completed']);
 export const userRoleEnum = pgEnum('user_role', ['player', 'admin']);
-export const assetClassEnum = pgEnum('asset_class', ['cash', 'bonds', 'equities', 'commodities', 'reits']);
 
 // ── users ──────────────────────────────────────────
 export const users = pgTable('users', {
@@ -58,23 +57,11 @@ export const allocations = pgTable('allocations', {
   gameId: uuid('game_id').notNull().references(() => games.id, { onDelete: 'cascade' }),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   year: integer('year').notNull(),
-  cashPct: integer('cash_pct').notNull(),
-  bondsPct: integer('bonds_pct').notNull(),
-  equitiesPct: integer('equities_pct').notNull(),
-  commoditiesPct: integer('commodities_pct').notNull(),
-  reitsPct: integer('reits_pct').notNull(),
+  fundAllocations: jsonb('fund_allocations').notNull(),
   submittedAt: timestamp('submitted_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex('allocations_unique').on(table.gameId, table.userId, table.year),
   index('allocations_game_user_idx').on(table.gameId, table.userId),
-  check('allocations_sum_check',
-    sql`${table.cashPct} + ${table.bondsPct} + ${table.equitiesPct} + ${table.commoditiesPct} + ${table.reitsPct} = 100`
-  ),
-  check('allocations_cash_range', sql`${table.cashPct} BETWEEN 0 AND 100`),
-  check('allocations_bonds_range', sql`${table.bondsPct} BETWEEN 0 AND 100`),
-  check('allocations_equities_range', sql`${table.equitiesPct} BETWEEN 0 AND 100`),
-  check('allocations_commodities_range', sql`${table.commoditiesPct} BETWEEN 0 AND 100`),
-  check('allocations_reits_range', sql`${table.reitsPct} BETWEEN 0 AND 100`),
 ]);
 
 // ── portfolio_snapshots ────────────────────────────
@@ -90,18 +77,6 @@ export const portfolioSnapshots = pgTable('portfolio_snapshots', {
 }, (table) => [
   uniqueIndex('snapshots_unique').on(table.gameId, table.userId, table.year),
   index('snapshots_game_user_idx').on(table.gameId, table.userId),
-]);
-
-// ── asset_returns ──────────────────────────────────
-export const assetReturns = pgTable('asset_returns', {
-  id: serial('id').primaryKey(),
-  year: integer('year').notNull(),
-  assetClass: assetClassEnum('asset_class').notNull(),
-  returnPct: decimal('return_pct', { precision: 8, scale: 4 }).notNull(),
-  scenarioTitle: text('scenario_title').notNull(),
-  scenarioDescription: text('scenario_description').notNull(),
-}, (table) => [
-  uniqueIndex('asset_returns_unique').on(table.year, table.assetClass),
 ]);
 
 // ── fund_benchmarks ────────────────────────────────

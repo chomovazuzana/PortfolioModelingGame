@@ -15,6 +15,7 @@ import { Button } from '../components/ui/Button';
 import type { Allocation } from '../shared/types';
 import { COMPLETED_YEAR_MARKER } from '../shared/constants';
 
+
 export function GamePlayPage() {
   const { id } = useParams<{ id: string }>();
 
@@ -87,8 +88,8 @@ function GamePlayContent({ gameId }: { gameId: string }) {
     setSubmitError(null);
     try {
       await submitAllocation({
-        ...allocation,
         year: playState.currentYear,
+        allocations: allocation,
       });
       // Refresh snapshots after submission
       snapshotsQuery.refetch();

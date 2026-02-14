@@ -2,7 +2,6 @@
 export type GameStatus = 'open' | 'closed' | 'completed';
 export type PlayerGameStatus = 'playing' | 'completed';
 export type UserRole = 'player' | 'admin';
-export type AssetClass = 'cash' | 'bonds' | 'equities' | 'commodities' | 'reits';
 
 // ── User ───────────────────────────────────────────
 export interface User {
@@ -36,19 +35,15 @@ export interface GameDetail extends Game {
 }
 
 // ── Allocation ─────────────────────────────────────
-export interface Allocation {
-  cash: number;
-  bonds: number;
-  equities: number;
-  commodities: number;
-  reits: number;
-}
+/** Fund allocation: fundId → percentage (0-100, integers, must sum to 100) */
+export type Allocation = Record<number, number>;
 
-export interface AllocationRecord extends Allocation {
+export interface AllocationRecord {
   id: string;
   gameId: string;
   userId: string;
   year: number;
+  allocations: Record<number, number>;
   submittedAt: string;
 }
 
@@ -97,13 +92,14 @@ export interface YearResult {
   portfolioStart: number;
   portfolioEnd: number;
   returnPct: number;
-  breakdown: AssetBreakdown[];
+  breakdown: FundBreakdown[];
   nextYear: number | null;       // null if game complete
   playerStatus: PlayerGameStatus;
 }
 
-export interface AssetBreakdown {
-  asset: AssetClass;
+export interface FundBreakdown {
+  fundId: number;
+  fundName: string;
   allocated: number;
   returnPct: number;
   contribution: number;
@@ -139,7 +135,8 @@ export interface PlayerFinalResult {
 
 export interface OptimalYearResult {
   year: number;
-  bestAsset: AssetClass;
+  bestFundId: number;
+  bestFundName: string;
   returnPct: number;
   portfolioValue: number;
 }
@@ -192,11 +189,7 @@ export interface JoinGameRequest {
 
 export interface SubmitAllocationRequest {
   year: number;
-  cash: number;
-  bonds: number;
-  equities: number;
-  commodities: number;
-  reits: number;
+  allocations: Record<number, number>;
 }
 
 // ── Admin Player Detail ───────────────────────────

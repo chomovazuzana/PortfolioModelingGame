@@ -1,26 +1,102 @@
-import type { AssetClass } from './types';
-
 export const GAME_YEARS = [2021, 2022, 2023, 2024] as const;
 export type GameYear = (typeof GAME_YEARS)[number];
 
-export const ASSET_CLASSES: AssetClass[] = ['cash', 'bonds', 'equities', 'commodities', 'reits'];
+/** All 12 DELOS/NBG mutual fund IDs */
+export const FUND_IDS: number[] = [750, 752, 753, 782, 916, 924, 940, 951, 953, 962, 965, 970];
 
-export const ASSET_CLASS_LABELS: Record<AssetClass, string> = {
-  cash: 'Cash',
-  bonds: 'Bonds',
-  equities: 'Equities',
-  commodities: 'Commodities',
-  reits: 'REITs',
+/** Fund ID → English name */
+export const FUND_NAMES: Record<number, string> = {
+  750: 'DELOS Synthesis Best Blue',
+  752: 'DELOS Synthesis Best Yellow',
+  753: 'DELOS Synthesis Best Red',
+  782: 'DELOS Fixed Income Plus',
+  916: 'DELOS Small Cap',
+  924: 'NBG Global Equity',
+  940: 'NBG European Allstars',
+  951: 'DELOS Mixed',
+  953: 'DELOS Blue Chips',
+  962: 'DELOS Short & Medium-Term',
+  965: 'DELOS Strategic Investments',
+  970: 'DELOS Greek Growth',
+};
+
+/** Fund ID → classification */
+export const FUND_TYPES: Record<number, 'Bond' | 'Mixed' | 'Equity'> = {
+  750: 'Bond',
+  752: 'Mixed',
+  753: 'Equity',
+  782: 'Bond',
+  916: 'Equity',
+  924: 'Equity',
+  940: 'Equity',
+  951: 'Mixed',
+  953: 'Equity',
+  962: 'Bond',
+  965: 'Mixed',
+  970: 'Bond',
+};
+
+/** Fund returns by year: year → fundId → returnPct */
+export const FUND_RETURNS: Record<number, Record<number, number>> = {
+  2021: {
+    750: -0.88,
+    752: 10.16,
+    753: 22.09,
+    782: -2.80,
+    916: 12.35,
+    924: 28.27,
+    940: 19.65,
+    951: 6.24,
+    953: 13.47,
+    962: -0.04,
+    965: 10.85,
+    970: 0.92,
+  },
+  2022: {
+    750: -4.96,
+    752: -8.94,
+    753: -11.99,
+    782: -17.13,
+    916: -3.24,
+    924: -11.71,
+    940: -10.72,
+    951: -3.53,
+    953: 4.27,
+    962: -3.92,
+    965: -8.84,
+    970: -9.62,
+  },
+  2023: {
+    750: 3.69,
+    752: 7.75,
+    753: 11.21,
+    782: 8.40,
+    916: 38.39,
+    924: 16.53,
+    940: 16.15,
+    951: 22.40,
+    953: 38.34,
+    962: 4.31,
+    965: 13.31,
+    970: 6.49,
+  },
+  2024: {
+    750: 3.14,
+    752: 12.05,
+    753: 21.23,
+    782: 1.45,
+    916: 8.49,
+    924: 16.66,
+    940: 7.10,
+    951: 7.43,
+    953: 14.25,
+    962: 3.36,
+    965: 6.27,
+    970: 4.69,
+  },
 };
 
 export const DEFAULT_INITIAL_CAPITAL = 100_000;
-
-export const ASSET_RETURNS: Record<number, Record<AssetClass, number>> = {
-  2021: { cash: 0.1, bonds: -1.5, equities: 22.35, commodities: 40.1, reits: 41.3 },
-  2022: { cash: 0.4, bonds: -12.3, equities: -17.73, commodities: 16.3, reits: -24.4 },
-  2023: { cash: 4.5, bonds: 5.3, equities: 24.42, commodities: -10.3, reits: 10.6 },
-  2024: { cash: 5.0, bonds: -1.7, equities: 19.2, commodities: 3.0, reits: 8.8 },
-};
 
 export const SCENARIO_BRIEFINGS: Record<number, { title: string; description: string }> = {
   2021: {

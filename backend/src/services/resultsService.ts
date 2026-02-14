@@ -2,7 +2,6 @@ import { db } from '../db/index';
 import { games, gamePlayers, allocations, portfolioSnapshots, fundBenchmarks } from '../db/schema';
 import { eq, and, asc } from 'drizzle-orm';
 import { calculateOptimalPath, cumulativeReturn, compoundReturns } from '../shared/calculations';
-import { GAME_YEARS, DEFAULT_INITIAL_CAPITAL } from '../shared/constants';
 import type {
   FinalResults,
   PlayerFinalResult,
@@ -71,11 +70,7 @@ export async function getFinalResults(gameId: string, userId: string): Promise<F
     gameId: r.gameId,
     userId: r.userId,
     year: r.year,
-    cash: r.cashPct,
-    bonds: r.bondsPct,
-    equities: r.equitiesPct,
-    commodities: r.commoditiesPct,
-    reits: r.reitsPct,
+    allocations: r.fundAllocations as Record<number, number>,
     submittedAt: r.submittedAt.toISOString(),
   }));
 

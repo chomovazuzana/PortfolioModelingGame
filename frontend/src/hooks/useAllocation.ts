@@ -1,36 +1,33 @@
 import { useState, useCallback } from 'react';
-import type { Allocation, AssetClass } from '../shared/types';
+import type { Allocation } from '../shared/types';
+import { FUND_IDS } from '../shared/constants';
 
-const DEFAULT_ALLOCATION: Allocation = {
-  cash: 20,
-  bonds: 20,
-  equities: 20,
-  commodities: 20,
-  reits: 20,
-};
+function createDefaultAllocation(): Allocation {
+  const alloc: Allocation = {};
+  for (const id of FUND_IDS) {
+    alloc[id] = 0;
+  }
+  return alloc;
+}
+
+const DEFAULT_ALLOCATION = createDefaultAllocation();
 
 export function useAllocation(initialAllocation?: Allocation) {
   const [allocation, setAllocation] = useState<Allocation>(
-    initialAllocation ?? DEFAULT_ALLOCATION,
+    initialAllocation ?? { ...DEFAULT_ALLOCATION },
   );
 
-  const setAsset = useCallback((asset: AssetClass, value: number) => {
+  const setFund = useCallback((fundId: number, value: number) => {
     const clamped = Math.max(0, Math.min(100, Math.round(value)));
-    setAllocation((prev) => ({ ...prev, [asset]: clamped }));
+    setAllocation((prev) => ({ ...prev, [fundId]: clamped }));
   }, []);
 
-  const total =
-    allocation.cash +
-    allocation.bonds +
-    allocation.equities +
-    allocation.commodities +
-    allocation.reits;
-
+  const total = Object.values(allocation).reduce((sum, v) => sum + v, 0);
   const isValid = total === 100;
 
   const reset = useCallback(() => {
-    setAllocation(initialAllocation ?? DEFAULT_ALLOCATION);
+    setAllocation(initialAllocation ?? { ...DEFAULT_ALLOCATION });
   }, [initialAllocation]);
 
-  return { allocation, setAsset, total, isValid, reset };
+  return { allocation, setFund, total, isValid, reset };
 }

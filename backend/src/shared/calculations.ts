@@ -1,26 +1,37 @@
-import { ASSET_RETURNS, ASSET_CLASSES, GAME_YEARS } from './constants';
-import type { Allocation, AssetBreakdown, AssetClass, OptimalYearResult } from './types';
+import { FUND_RETURNS, FUND_IDS, FUND_NAMES, GAME_YEARS } from './constants';
+import type { Allocation, FundBreakdown, OptimalYearResult } from './types';
 
 /**
- * Calculate the portfolio result for a single year given an allocation and starting value.
+ * Calculate the portfolio result for a single year given a fund allocation and starting value.
  */
 export function calculateYearResult(
   allocation: Allocation,
   year: number,
   portfolioStartValue: number
-): { valueEnd: number; returnPct: number; breakdown: AssetBreakdown[] } {
-  const yearReturns = ASSET_RETURNS[year];
+): { valueEnd: number; returnPct: number; breakdown: FundBreakdown[] } {
+  const yearReturns = FUND_RETURNS[year];
   if (!yearReturns) {
     throw new Error(`No return data for year ${year}`);
   }
 
-  const breakdown: AssetBreakdown[] = ASSET_CLASSES.map((asset) => {
-    const pct = allocation[asset];
+  const breakdown: FundBreakdown[] = [];
+
+  for (const fundId of FUND_IDS) {
+    const pct = allocation[fundId] ?? 0;
+    if (pct === 0) continue;
+
     const allocated = portfolioStartValue * (pct / 100);
-    const returnPct = yearReturns[asset];
+    const returnPct = yearReturns[fundId] ?? 0;
     const contribution = allocated * (returnPct / 100);
-    return { asset, allocated, returnPct, contribution };
-  });
+
+    breakdown.push({
+      fundId,
+      fundName: FUND_NAMES[fundId] ?? `Fund ${fundId}`,
+      allocated: roundCurrency(allocated),
+      returnPct,
+      contribution: roundCurrency(contribution),
+    });
+  }
 
   const totalContribution = breakdown.reduce((sum, b) => sum + b.contribution, 0);
   const valueEnd = portfolioStartValue + totalContribution;
@@ -29,35 +40,38 @@ export function calculateYearResult(
   return {
     valueEnd: roundCurrency(valueEnd),
     returnPct: roundPercent(returnPct),
-    breakdown: breakdown.map((b) => ({
-      ...b,
-      allocated: roundCurrency(b.allocated),
-      contribution: roundCurrency(b.contribution),
-    })),
+    breakdown,
   };
 }
 
 /**
- * Compute the optimal portfolio path (100% in best-performing asset each year).
+ * Compute the optimal portfolio path (100% in best-performing fund each year).
  */
 export function calculateOptimalPath(initialCapital: number): OptimalYearResult[] {
   const results: OptimalYearResult[] = [];
   let currentValue = initialCapital;
 
   for (const year of GAME_YEARS) {
-    const yearReturns = ASSET_RETURNS[year]!;
-    let bestAsset: AssetClass = 'cash';
+    const yearReturns = FUND_RETURNS[year]!;
+    let bestFundId = FUND_IDS[0]!;
     let bestReturn = -Infinity;
 
-    for (const asset of ASSET_CLASSES) {
-      if (yearReturns[asset] > bestReturn) {
-        bestReturn = yearReturns[asset];
-        bestAsset = asset;
+    for (const fundId of FUND_IDS) {
+      const ret = yearReturns[fundId] ?? 0;
+      if (ret > bestReturn) {
+        bestReturn = ret;
+        bestFundId = fundId;
       }
     }
 
     currentValue = roundCurrency(currentValue * (1 + bestReturn / 100));
-    results.push({ year, bestAsset, returnPct: bestReturn, portfolioValue: currentValue });
+    results.push({
+      year,
+      bestFundId,
+      bestFundName: FUND_NAMES[bestFundId] ?? `Fund ${bestFundId}`,
+      returnPct: bestReturn,
+      portfolioValue: currentValue,
+    });
   }
 
   return results;
@@ -82,10 +96,19 @@ export function compoundReturns(yearlyReturnPcts: number[]): number {
 }
 
 /**
- * Validates that an allocation sums to exactly 100 and each value is 0-100 integer.
+ * Validates that a fund allocation sums to exactly 100 and each value is 0-100 integer.
  */
 export function validateAllocation(allocation: Allocation): { valid: boolean; error?: string } {
-  const values = ASSET_CLASSES.map((a) => allocation[a]);
+  const validIdSet = new Set(FUND_IDS);
+  const keys = Object.keys(allocation).map(Number);
+
+  for (const key of keys) {
+    if (!validIdSet.has(key)) {
+      return { valid: false, error: `Invalid fund ID: ${key}` };
+    }
+  }
+
+  const values = keys.map((k) => allocation[k]!);
 
   for (const v of values) {
     if (!Number.isInteger(v)) return { valid: false, error: 'All allocations must be integers' };

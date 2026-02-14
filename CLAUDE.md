@@ -1,7 +1,7 @@
 # Portfolio Modeling Game - Claude Instructions
 
 ## Project Overview
-A competitive investment simulation game where financial advisors allocate capital across 5 asset classes (Cash, Bonds, Equities, Commodities, REITs) over 4 historical years (2021-2024). Players progress at their own pace (asynchronous). Built as separate frontend and backend applications, containerized with Docker.
+A competitive investment simulation game where financial advisors allocate capital across 12 DELOS/NBG mutual funds over 4 historical years (2021-2024). Players progress at their own pace (asynchronous). Built as separate frontend and backend applications, containerized with Docker.
 
 **Target Users**: Financial advisors, investment professionals, and trainees at NBG (National Bank of Greece).
 
@@ -31,7 +31,7 @@ PortfolioModelingGame/
 ├── frontend/                   # React application (own package.json)
 │   ├── src/
 │   │   ├── components/         # Reusable UI components
-│   │   │   ├── allocation/     # Allocation sliders, summary
+│   │   │   ├── allocation/     # Fund allocation inputs, summary
 │   │   │   ├── game/           # Game-specific components
 │   │   │   ├── charts/         # Recharts wrappers
 │   │   │   └── ui/             # Generic UI (buttons, cards, etc.)
@@ -65,7 +65,7 @@ PortfolioModelingGame/
 │
 ├── shared/                     # Shared TypeScript types (copied at build)
 │   ├── types.ts                # Game domain types (API contracts)
-│   ├── constants.ts            # Asset returns, game config defaults
+│   ├── constants.ts            # Fund returns, fund names, game config
 │   └── calculations.ts         # Portfolio math (used by both)
 │
 ├── docs/                       # Project documentation
@@ -142,16 +142,14 @@ React (Vite)  →  Express Backend  →  PostgreSQL
 
 ### Core Tables
 - `users` - Player accounts (id, email, display_name, role, organizational_unit, created_at)
-- `games` - Game sessions (id, name, game_code, status, initial_capital, deadline, created_by, config)
-- `game_players` - Player enrollment (game_id, user_id, current_year, status, joined_at)
-- `allocations` - Per-player per-year decisions (game_id, user_id, year, cash_pct, bonds_pct, equities_pct, commodities_pct, reits_pct, submitted_at)
+- `games` - Game sessions (id, name, game_code, status, initial_capital, deadline, round deadlines, created_by)
+- `game_players` - Player enrollment (game_id, user_id, current_year, status, joined_at, hidden_from_leaderboard)
+- `allocations` - Per-player per-year decisions (game_id, user_id, year, fund_allocations JSONB, submitted_at)
 - `portfolio_snapshots` - Computed values per year (game_id, user_id, year, value_start, value_end, return_pct, created_at)
-- `asset_returns` - Historical data (year, asset_class, return_pct, scenario_title, scenario_description)
-- `fund_benchmarks` - NBG/DELOS fund reference data (fund_id, fund_name, year, cash_pct, fixed_income_pct, equity_pct, return_pct, sharpe_ratio)
+- `fund_benchmarks` - NBG/DELOS fund reference data (fund_id, fund_name, fund_type, year, cash_pct, fixed_income_pct, equity_pct, return_pct, sharpe_ratio)
 
 ### Key Constraints
-- `allocations`: CHECK (cash_pct + bonds_pct + equities_pct + commodities_pct + reits_pct = 100)
-- `allocations`: CHECK (each pct BETWEEN 0 AND 100)
+- `allocations.fund_allocations`: JSONB stores `Record<fundId, percentage>`, validated at application level (sum = 100, each 0-100 integer, valid fund IDs)
 - `allocations`: UNIQUE (game_id, user_id, year)
 - `game_players`: UNIQUE (game_id, user_id)
 - `games.game_code`: UNIQUE, 6-char alphanumeric
@@ -160,7 +158,6 @@ React (Vite)  →  Express Backend  →  PostgreSQL
 - `game_status`: 'open', 'closed', 'completed'
 - `player_game_status`: 'playing', 'completed'
 - `user_role`: 'player', 'admin'
-- `asset_class`: 'cash', 'bonds', 'equities', 'commodities', 'reits'
 
 ## API Design (RESTful)
 
@@ -180,7 +177,7 @@ React (Vite)  →  Express Backend  →  PostgreSQL
 
 ### Gameplay (per-player async progression)
 - `GET /api/games/:id/play` - Get current year briefing + portfolio state
-- `POST /api/games/:id/allocations` - Submit allocation for current year
+- `POST /api/games/:id/allocations` - Submit allocation for current year (`{ year, allocations: { fundId: pct, ... } }`)
 - `GET /api/games/:id/allocations` - Get own allocation history
 
 ### Results
@@ -214,7 +211,7 @@ React (Vite)  →  Express Backend  →  PostgreSQL
 
 ### Database
 - Drizzle migrations for all schema changes
-- Seed script for asset returns + fund benchmark data
+- Seed script for dev users + fund benchmark data
 - `timestamptz` for all timestamps
 - UUIDs for all primary keys
 
@@ -226,25 +223,18 @@ React (Vite)  →  Express Backend  →  PostgreSQL
 - Test files co-located: `*.test.ts` / `*.test.tsx`
 
 ## Key Business Rules
-1. Allocations must sum to exactly 100% (integers only, 0-100 range)
+1. Allocations must sum to exactly 100% (integers only, 0-100 range) across 12 funds
 2. Players cannot re-submit allocation for a completed year
 3. Portfolio value compounds: Year N start = Year N-1 end value
 4. Initial capital: EUR 100,000 (configurable per game)
-5. 5 asset classes: Cash, Bonds, Equities, Commodities, REITs
-6. Optimal portfolio = 100% in best-performing asset each year
-7. **Fund benchmark data is shown ONLY in final results** (not during gameplay)
+5. 12 DELOS/NBG mutual funds (Bond, Mixed, Equity types)
+6. Optimal portfolio = 100% in best-performing fund each year
+7. **Fund details (composition, Sharpe) shown ONLY in final results** (during allocation, players see only fund names)
 8. Players progress independently (no waiting for others)
 9. Submitting allocation immediately triggers year resolution for that player
 
-## Historical Returns Data
-```typescript
-export const ASSET_RETURNS = {
-  2021: { cash: 0.1, bonds: -1.5, equities: 22.35, commodities: 40.1, reits: 41.3 },
-  2022: { cash: 0.4, bonds: -12.3, equities: -17.73, commodities: 16.3, reits: -24.4 },
-  2023: { cash: 4.5, bonds: 5.3, equities: 24.42, commodities: -10.3, reits: 10.6 },
-  2024: { cash: 5.0, bonds: -1.7, equities: 19.2, commodities: 3.0, reits: 8.8 },
-} as const;
-```
+## Fund Data
+12 DELOS/NBG mutual funds with historical returns for 2021-2024. Fund IDs: 750, 752, 753, 782, 916, 924, 940, 951, 953, 962, 965, 970. Returns data stored in `shared/constants.ts` as `FUND_RETURNS`. Fund benchmark details (composition, Sharpe ratios) stored in the `fund_benchmarks` database table and seeded via `seed.ts`.
 
 ## Environment Variables
 ```bash

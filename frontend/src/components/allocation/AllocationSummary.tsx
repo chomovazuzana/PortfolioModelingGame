@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import type { Allocation, AssetClass } from '../../shared/types';
-import { ASSET_CLASS_LABELS } from '../../shared/constants';
+import type { Allocation } from '../../shared/types';
+import { FUND_NAMES } from '../../shared/constants';
 
 interface AllocationSummaryProps {
   allocation: Allocation;
@@ -9,31 +9,30 @@ interface AllocationSummaryProps {
   total: number;
 }
 
-const ASSET_COLORS: Record<AssetClass, string> = {
-  cash: '#059669',
-  bonds: '#2563eb',
-  equities: '#7c3aed',
-  commodities: '#d97706',
-  reits: '#e11d48',
-};
+const FUND_COLORS: string[] = [
+  '#2563eb', '#059669', '#7c3aed', '#d97706',
+  '#e11d48', '#0891b2', '#4f46e5', '#ca8a04',
+  '#dc2626', '#0d9488', '#7c2d12', '#6366f1',
+];
 
 export function AllocationSummary({ allocation, isValid, total }: AllocationSummaryProps) {
-  const pieData = (Object.keys(allocation) as AssetClass[])
-    .filter((key) => allocation[key] > 0)
-    .map((key) => ({
-      name: ASSET_CLASS_LABELS[key],
-      value: allocation[key],
-      color: ASSET_COLORS[key],
+  const entries = Object.entries(allocation)
+    .filter(([, v]) => v > 0)
+    .map(([key, value], i) => ({
+      fundId: Number(key),
+      name: FUND_NAMES[Number(key)] ?? `Fund ${key}`,
+      value,
+      color: FUND_COLORS[i % FUND_COLORS.length]!,
     }));
 
   return (
     <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
-      {pieData.length > 0 && (
+      {entries.length > 0 && (
         <div className="h-16 w-16 shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={pieData}
+                data={entries}
                 dataKey="value"
                 cx="50%"
                 cy="50%"
@@ -41,8 +40,8 @@ export function AllocationSummary({ allocation, isValid, total }: AllocationSumm
                 innerRadius={12}
                 strokeWidth={1}
               >
-                {pieData.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} />
+                {entries.map((entry) => (
+                  <Cell key={entry.fundId} fill={entry.color} />
                 ))}
               </Pie>
             </PieChart>

@@ -1,4 +1,5 @@
 import type { FinalResults } from '../shared/types';
+import { FUND_NAMES } from '../shared/constants';
 
 export async function generateResultsPdf(
   results: FinalResults,
@@ -7,7 +8,6 @@ export async function generateResultsPdf(
 ): Promise<void> {
   const { default: jsPDF } = await import('jspdf');
   const autoTableModule = await import('jspdf-autotable');
-  // jspdf-autotable adds itself to jsPDF prototype via side effects
   const autoTable = autoTableModule.default;
 
   const doc = new jsPDF();
@@ -41,25 +41,29 @@ export async function generateResultsPdf(
     78
   );
 
-  // Allocations table
+  // Allocations per year (fund-based, vertical list per year)
   doc.setFontSize(14);
   doc.setTextColor(0);
   doc.text('Allocations', 14, 92);
 
+  const allocBody: string[][] = [];
+  for (const a of playerResult.allocations) {
+    const fundEntries = Object.entries(a.allocations)
+      .filter(([, pct]) => pct > 0)
+      .map(([fundId, pct]) => `${FUND_NAMES[Number(fundId)] ?? fundId}: ${pct}%`)
+      .join(', ');
+
+    allocBody.push([a.year.toString(), fundEntries || 'None']);
+  }
+
   autoTable(doc, {
     startY: 96,
-    head: [['Year', 'Cash %', 'Bonds %', 'Equities %', 'Commodities %', 'REITs %']],
-    body: playerResult.allocations.map((a) => [
-      a.year.toString(),
-      `${a.cash}`,
-      `${a.bonds}`,
-      `${a.equities}`,
-      `${a.commodities}`,
-      `${a.reits}`,
-    ]),
+    head: [['Year', 'Fund Allocations']],
+    body: allocBody,
     theme: 'grid',
     headStyles: { fillColor: [59, 130, 246] },
     styles: { fontSize: 9 },
+    columnStyles: { 1: { cellWidth: 140 } },
   });
 
   // Portfolio table

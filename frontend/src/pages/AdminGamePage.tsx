@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../services/api';
 import { Spinner } from '../components/ui/Spinner';
 import { Button } from '../components/ui/Button';
+import { FUND_NAMES } from '../shared/constants';
 import type { AdminPlayerDetail } from '../shared/types';
 
 export function AdminGamePage() {
@@ -218,30 +219,24 @@ function PlayerRow({
                 {player.allocations.length === 0 ? (
                   <p className="text-xs text-gray-400">No allocations yet</p>
                 ) : (
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b text-gray-500">
-                        <th className="py-1 text-left">Year</th>
-                        <th className="py-1 text-right">Cash</th>
-                        <th className="py-1 text-right">Bonds</th>
-                        <th className="py-1 text-right">Equities</th>
-                        <th className="py-1 text-right">Commodities</th>
-                        <th className="py-1 text-right">REITs</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {player.allocations.map((a) => (
-                        <tr key={a.year} className="border-b border-gray-100">
-                          <td className="py-1">{a.year}</td>
-                          <td className="py-1 text-right">{a.cash}%</td>
-                          <td className="py-1 text-right">{a.bonds}%</td>
-                          <td className="py-1 text-right">{a.equities}%</td>
-                          <td className="py-1 text-right">{a.commodities}%</td>
-                          <td className="py-1 text-right">{a.reits}%</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className="space-y-2">
+                    {player.allocations.map((a) => {
+                      const entries = Object.entries(a.allocations)
+                        .filter(([, pct]) => pct > 0)
+                        .map(([fundId, pct]) => ({
+                          name: FUND_NAMES[Number(fundId)] ?? `Fund ${fundId}`,
+                          pct,
+                        }));
+                      return (
+                        <div key={a.year} className="border-b border-gray-100 pb-1">
+                          <span className="text-xs font-medium text-gray-600">{a.year}:</span>{' '}
+                          <span className="text-xs text-gray-500">
+                            {entries.map((e) => `${e.name} ${e.pct}%`).join(', ') || 'None'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
 

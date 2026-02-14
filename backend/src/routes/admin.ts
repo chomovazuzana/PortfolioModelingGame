@@ -72,11 +72,7 @@ router.get('/games/:id/players', requireAdmin, validateParams(gameIdParam), asyn
         gameId: allocations.gameId,
         userId: allocations.userId,
         year: allocations.year,
-        cashPct: allocations.cashPct,
-        bondsPct: allocations.bondsPct,
-        equitiesPct: allocations.equitiesPct,
-        commoditiesPct: allocations.commoditiesPct,
-        reitsPct: allocations.reitsPct,
+        fundAllocations: allocations.fundAllocations,
         submittedAt: allocations.submittedAt,
       })
       .from(allocations)
@@ -94,11 +90,7 @@ router.get('/games/:id/players', requireAdmin, validateParams(gameIdParam), asyn
         gameId: r.gameId,
         userId: r.userId,
         year: r.year,
-        cash: r.cashPct,
-        bonds: r.bondsPct,
-        equities: r.equitiesPct,
-        commodities: r.commoditiesPct,
-        reits: r.reitsPct,
+        allocations: r.fundAllocations as Record<number, number>,
         submittedAt: r.submittedAt.toISOString(),
       });
     }
@@ -148,11 +140,7 @@ router.get('/games/:id/allocations', requireAdmin, validateParams(gameIdParam), 
         userId: allocations.userId,
         displayName: users.displayName,
         year: allocations.year,
-        cashPct: allocations.cashPct,
-        bondsPct: allocations.bondsPct,
-        equitiesPct: allocations.equitiesPct,
-        commoditiesPct: allocations.commoditiesPct,
-        reitsPct: allocations.reitsPct,
+        fundAllocations: allocations.fundAllocations,
         submittedAt: allocations.submittedAt,
       })
       .from(allocations)
@@ -165,11 +153,7 @@ router.get('/games/:id/allocations', requireAdmin, validateParams(gameIdParam), 
       userId: r.userId,
       displayName: r.displayName,
       year: r.year,
-      cash: r.cashPct,
-      bonds: r.bondsPct,
-      equities: r.equitiesPct,
-      commodities: r.commoditiesPct,
-      reits: r.reitsPct,
+      allocations: r.fundAllocations as Record<number, number>,
       submittedAt: r.submittedAt.toISOString(),
     }));
 
@@ -206,11 +190,9 @@ router.get('/games/:id/leaderboard/export', requireAdmin, validateParams(gameIdP
       }
     }
 
-    const initialCapital = Number(game.initialCapital);
-
     // Build CSV
     const headers = ['Rank', 'Name', 'Email', 'Portfolio Value', 'Total Return %', 'Status', 'Current Year'];
-    const rows = leaderboard.map((e) => [
+    const csvRows = leaderboard.map((e) => [
       e.rank,
       `"${e.displayName.replace(/"/g, '""')}"`,
       emailMap.get(e.userId) ?? '',
@@ -220,7 +202,7 @@ router.get('/games/:id/leaderboard/export', requireAdmin, validateParams(gameIdP
       e.currentYear,
     ]);
 
-    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const csv = [headers.join(','), ...csvRows.map((r) => r.join(','))].join('\n');
 
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="leaderboard-${game.gameCode}.csv"`);

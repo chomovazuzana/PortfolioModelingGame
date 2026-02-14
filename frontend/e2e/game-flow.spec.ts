@@ -31,11 +31,14 @@ test.describe('Game Flow', () => {
     ).click();
     await expect(page).toHaveURL(/\/play/);
 
-    // 5. Year 2021: Set allocations and submit
+    // 5. Year 2021: Set fund allocations and submit
     await expect(page.getByText('Year 2021')).toBeVisible();
     await expect(page.getByText(/Strong Recovery|scenario/i)).toBeVisible();
 
-    // Submit allocation (default 20% each)
+    // Set 100% to NBG Global Equity (fund 924) using the numeric input
+    const fundInput = page.locator('#fund-924');
+    await fundInput.fill('100');
+
     await page.getByRole('button', { name: 'Submit Allocation' }).click();
 
     // Confirm dialog
@@ -47,6 +50,8 @@ test.describe('Game Flow', () => {
 
     // 6. Year 2022
     await expect(page.getByText('Year 2022 Allocation')).toBeVisible();
+    const fund953Input2022 = page.locator('#fund-953');
+    await fund953Input2022.fill('100');
     await page.getByRole('button', { name: 'Submit Allocation' }).click();
     await page.getByRole('button', { name: /Confirm/ }).click();
     await expect(page.getByText('Year 2022 Results')).toBeVisible();
@@ -54,6 +59,8 @@ test.describe('Game Flow', () => {
 
     // 7. Year 2023
     await expect(page.getByText('Year 2023 Allocation')).toBeVisible();
+    const fund916Input2023 = page.locator('#fund-916');
+    await fund916Input2023.fill('100');
     await page.getByRole('button', { name: 'Submit Allocation' }).click();
     await page.getByRole('button', { name: /Confirm/ }).click();
     await expect(page.getByText('Year 2023 Results')).toBeVisible();
@@ -61,6 +68,8 @@ test.describe('Game Flow', () => {
 
     // 8. Year 2024 (final year)
     await expect(page.getByText('Year 2024 Allocation')).toBeVisible();
+    const fund753Input2024 = page.locator('#fund-753');
+    await fund753Input2024.fill('100');
     await page.getByRole('button', { name: 'Submit Allocation' }).click();
     await page.getByRole('button', { name: /Confirm/ }).click();
     await expect(page.getByText('Year 2024 Results')).toBeVisible();

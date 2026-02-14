@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { FUND_IDS } from '../shared/constants';
 
 export const createGameSchema = z.object({
   name: z.string().min(1).max(100),
@@ -27,16 +28,22 @@ export const joinGameSchema = z.object({
   hidden: z.boolean().optional().default(false),
 });
 
+const validFundIds = new Set(FUND_IDS.map(String));
+
 export const submitAllocationSchema = z.object({
   year: z.number().int().min(2021).max(2024),
-  cash: z.number().int().min(0).max(100),
-  bonds: z.number().int().min(0).max(100),
-  equities: z.number().int().min(0).max(100),
-  commodities: z.number().int().min(0).max(100),
-  reits: z.number().int().min(0).max(100),
+  allocations: z.record(z.string(), z.number().int().min(0).max(100)),
 }).refine(
-  (data) => data.cash + data.bonds + data.equities + data.commodities + data.reits === 100,
+  (data) => {
+    const sum = Object.values(data.allocations).reduce((a, b) => a + b, 0);
+    return sum === 100;
+  },
   { message: 'Allocations must sum to 100' }
+).refine(
+  (data) => {
+    return Object.keys(data.allocations).every((k) => validFundIds.has(k));
+  },
+  { message: 'Invalid fund ID' }
 );
 
 export const gameIdParam = z.object({

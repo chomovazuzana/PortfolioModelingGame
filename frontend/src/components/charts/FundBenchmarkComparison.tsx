@@ -165,9 +165,8 @@ export function FundBenchmarkComparison({
 
       {/* Disclaimer */}
       <p className="mt-4 rounded-lg bg-amber-50 px-4 py-3 text-xs text-amber-800">
-        <strong>Note:</strong> Fund benchmarks use 3 asset classes (Cash, Fixed Income, Equity).
-        The game uses 5 asset classes (Cash, Bonds, Equities, Commodities, REITs).
-        This comparison is for educational context, not direct equivalence.
+        <strong>Note:</strong> Fund benchmarks show what each individual fund would have returned
+        over the 4-year period. Your portfolio blends multiple funds according to your yearly allocations.
       </p>
     </div>
   );

@@ -1,6 +1,5 @@
 import { clsx } from 'clsx';
 import type { YearResult } from '../../shared/types';
-import { ASSET_CLASS_LABELS } from '../../shared/constants';
 import { Dialog } from '../ui/Dialog';
 import { Button } from '../ui/Button';
 
@@ -58,7 +57,7 @@ export function YearResultModal({ result, onContinue, onClose }: YearResultModal
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-left text-xs font-medium uppercase tracking-wide text-gray-500">
-                <th className="px-4 py-2">Asset</th>
+                <th className="px-4 py-2">Fund</th>
                 <th className="px-4 py-2 text-right">Allocation</th>
                 <th className="px-4 py-2 text-right">Return</th>
                 <th className="px-4 py-2 text-right">Contribution</th>
@@ -67,14 +66,14 @@ export function YearResultModal({ result, onContinue, onClose }: YearResultModal
             <tbody>
               {result.breakdown.map((row, i) => (
                 <tr
-                  key={row.asset}
+                  key={row.fundId}
                   className={clsx(i % 2 === 0 ? 'bg-white' : 'bg-gray-50')}
                 >
                   <td className="px-4 py-2 font-medium text-gray-900">
-                    {ASSET_CLASS_LABELS[row.asset]}
+                    {row.fundName}
                   </td>
                   <td className="px-4 py-2 text-right tabular-nums text-gray-700">
-                    {row.allocated}%
+                    {formatEur(row.allocated)}
                   </td>
                   <td className={clsx(
                     'px-4 py-2 text-right tabular-nums',

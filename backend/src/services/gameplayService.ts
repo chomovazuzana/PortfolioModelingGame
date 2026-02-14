@@ -98,7 +98,7 @@ export async function getPlayState(gameId: string, userId: string): Promise<Play
 export async function submitAllocation(
   gameId: string,
   userId: string,
-  allocationData: { year: number; cash: number; bonds: number; equities: number; commodities: number; reits: number }
+  allocationData: { year: number; allocations: Record<string, number> }
 ): Promise<YearResult> {
   // Use Drizzle transaction with raw SQL for FOR UPDATE support
   return await db.transaction(async (tx) => {
@@ -182,27 +182,20 @@ export async function submitAllocation(
       }
     }
 
-    // 5. Compute year result
-    const allocation: Allocation = {
-      cash: allocationData.cash,
-      bonds: allocationData.bonds,
-      equities: allocationData.equities,
-      commodities: allocationData.commodities,
-      reits: allocationData.reits,
-    };
+    // 5. Convert string keys to numbers and compute year result
+    const allocation: Allocation = {};
+    for (const [key, value] of Object.entries(allocationData.allocations)) {
+      allocation[Number(key)] = value;
+    }
 
     const calcResult = calculateYearResult(allocation, currentYear, portfolioStart);
 
-    // 6. Insert allocation record
+    // 6. Insert allocation record with JSONB
     await tx.insert(allocations).values({
       gameId,
       userId,
       year: currentYear,
-      cashPct: allocationData.cash,
-      bondsPct: allocationData.bonds,
-      equitiesPct: allocationData.equities,
-      commoditiesPct: allocationData.commodities,
-      reitsPct: allocationData.reits,
+      fundAllocations: allocation,
     });
 
     // 7. Insert portfolio snapshot
@@ -257,11 +250,7 @@ export async function getAllocations(gameId: string, userId: string): Promise<Al
     gameId: r.gameId,
     userId: r.userId,
     year: r.year,
-    cash: r.cashPct,
-    bonds: r.bondsPct,
-    equities: r.equitiesPct,
-    commodities: r.commoditiesPct,
-    reits: r.reitsPct,
+    allocations: r.fundAllocations as Record<number, number>,
     submittedAt: r.submittedAt.toISOString(),
   }));
 }

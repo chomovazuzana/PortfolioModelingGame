@@ -15,6 +15,13 @@
       "when": 1771084760547,
       "tag": "0001_majestic_nick_fury",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771200000000,
+      "tag": "0002_fund_allocation_migration",
+      "breakpoints": true
     }
   ]
 }

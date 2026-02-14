@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { assetReturns, fundBenchmarks, users } from './schema';
+import { fundBenchmarks, users } from './schema';
 
 const client = postgres(process.env.DATABASE_URL!);
 const db = drizzle(client);
@@ -23,62 +23,6 @@ async function seed() {
     await db.insert(users).values(u).onConflictDoNothing();
   }
   console.log(`  Inserted ${devUsers.length} dev users`);
-
-  // ── Seed Asset Returns (4 years × 5 asset classes = 20 rows) ──
-  const scenarios = {
-    2021: {
-      title: 'The Year of Strong Recovery',
-      description: 'The global economy bounces back from COVID-19. Vaccination programs accelerate, economies reopen, and consumer spending surges. Supply chains struggle to keep up with demand. Energy prices rise. Central banks keep interest rates near zero to support recovery. Real estate markets heat up as remote work reshapes housing demand.',
-    },
-    2022: {
-      title: 'The Year of Inflation and Tightening',
-      description: 'Inflation reaches multi-decade highs across the globe. Central banks respond with aggressive interest rate hikes. The war in Ukraine disrupts energy and food supplies. Bond markets suffer historic losses as yields spike. Technology stocks retreat from pandemic highs. Energy commodities surge on supply fears.',
-    },
-    2023: {
-      title: 'The Year of Stabilization and Artificial Intelligence',
-      description: 'Inflation begins to ease and markets anticipate the end of the rate-hiking cycle. The AI revolution, led by breakthroughs in large language models, drives a tech stock rally. Corporate earnings stabilize. Bond markets begin to recover. Real estate markets cool but remain resilient in key segments.',
-    },
-    2024: {
-      title: 'The Year of Resilience',
-      description: 'The economy proves more resilient than expected. Central banks begin cautious rate cuts. Equity markets continue upward, driven by technology and AI adoption. Bond markets remain volatile with mixed signals on inflation. Commodities stabilize. REITs benefit from the rate-cutting outlook.',
-    },
-  };
-
-  const returns = [
-    // 2021
-    { year: 2021, assetClass: 'cash' as const, returnPct: '0.1000' },
-    { year: 2021, assetClass: 'bonds' as const, returnPct: '-1.5000' },
-    { year: 2021, assetClass: 'equities' as const, returnPct: '22.3500' },
-    { year: 2021, assetClass: 'commodities' as const, returnPct: '40.1000' },
-    { year: 2021, assetClass: 'reits' as const, returnPct: '41.3000' },
-    // 2022
-    { year: 2022, assetClass: 'cash' as const, returnPct: '0.4000' },
-    { year: 2022, assetClass: 'bonds' as const, returnPct: '-12.3000' },
-    { year: 2022, assetClass: 'equities' as const, returnPct: '-17.7300' },
-    { year: 2022, assetClass: 'commodities' as const, returnPct: '16.3000' },
-    { year: 2022, assetClass: 'reits' as const, returnPct: '-24.4000' },
-    // 2023
-    { year: 2023, assetClass: 'cash' as const, returnPct: '4.5000' },
-    { year: 2023, assetClass: 'bonds' as const, returnPct: '5.3000' },
-    { year: 2023, assetClass: 'equities' as const, returnPct: '24.4200' },
-    { year: 2023, assetClass: 'commodities' as const, returnPct: '-10.3000' },
-    { year: 2023, assetClass: 'reits' as const, returnPct: '10.6000' },
-    // 2024
-    { year: 2024, assetClass: 'cash' as const, returnPct: '5.0000' },
-    { year: 2024, assetClass: 'bonds' as const, returnPct: '-1.7000' },
-    { year: 2024, assetClass: 'equities' as const, returnPct: '19.2000' },
-    { year: 2024, assetClass: 'commodities' as const, returnPct: '3.0000' },
-    { year: 2024, assetClass: 'reits' as const, returnPct: '8.8000' },
-  ];
-
-  const assetReturnRows = returns.map((r) => ({
-    ...r,
-    scenarioTitle: scenarios[r.year as keyof typeof scenarios].title,
-    scenarioDescription: scenarios[r.year as keyof typeof scenarios].description,
-  }));
-
-  await db.insert(assetReturns).values(assetReturnRows).onConflictDoNothing();
-  console.log(`  Inserted ${assetReturnRows.length} asset return records`);
 
   // ── Seed Fund Benchmarks (12 funds × 4 years = 48 rows) ──
   // Fund type classification based on equity allocation:
