@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 export const createGameSchema = z.object({
   name: z.string().min(1).max(100),
-  initialCapital: z.number().int().min(1000).max(10_000_000).default(100_000),
+  initialCapital: z.coerce.number().int().min(1000).max(10_000_000).default(100_000),
   deadline: z.string().datetime().nullable().optional(),
-  maxPlayers: z.number().int().min(2).max(500).nullable().optional(),
+  maxPlayers: z.coerce.number().int().min(2).max(500).nullable().optional(),
   gameCode: z.string().regex(/^[A-Z0-9]{6}$/).optional(),
 });
 
